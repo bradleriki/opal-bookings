@@ -1,0 +1,17 @@
+{
+  "name": "opal-bookings",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply opal-bookings --local",
+    "db:migrate:remote": "wrangler d1 migrations apply opal-bookings --remote",
+    "test": "node --test test/rules.test.js",
+    "test:api": "node --test test/api.test.js",
+    "deploy": "wrangler d1 migrations apply opal-bookings --remote && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

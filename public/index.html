@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Opal Carindale — Site Bookings</title>
+<meta name="description" content="BADGE site bookings for Opal Carindale RACF: tower crane, loading zone, hoist, boom pump and mobile crane.">
+<meta name="theme-color" content="#003C69">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/img/icon-192.png">
+<link rel="apple-touch-icon" href="/img/icon-192.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="band">
+  <div class="band-inner">
+    <a href="#/" aria-label="Bookings board"><img class="logo" src="/img/badge-logo.png" alt="BADGE" width="220" height="48"></a>
+    <div class="hdr-mid">
+      <h1>Crane &amp; Delivery Bookings</h1>
+      <p class="site">Opal Carindale RACF | 16 Surbiton Court, Carindale QLD 4152</p>
+      <p class="hours-note">Hourly slots, first booking 6:30am, last booking 5:30pm, Monday to Saturday</p>
+    </div>
+    <div class="hdr-right">
+      <span class="who" id="who" hidden></span>
+      <div class="hdr-actions" id="hdrActions" hidden>
+        <a class="ghost" href="#/plan" id="planLink" style="text-decoration:none">Daily lift plan</a>
+        <a class="ghost" href="#/admin" id="adminLink" style="text-decoration:none" hidden>Site team</a>
+        <button class="primary" id="bookBtn" type="button">Book a slot</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<footer class="foot"><span>Zones and dates from the programme set by the site team. Crane capacities from the Comedil CTL260-18 load chart; the crane crew confirms every lift.</span><span><b>BADGE</b> · Opal Carindale RACF · Crane &amp; Delivery Bookings Rev A</span></footer>
+
+<dialog id="formDlg" aria-labelledby="formTitle">
+  <form class="dlg" id="bkForm" novalidate>
+    <h2 id="formTitle">Book a slot</h2>
+    <fieldset>
+      <legend>What are you booking?</legend>
+      <div class="kinds">
+        <label><input type="radio" name="kind" value="crane"> Crane lift</label>
+        <label><input type="radio" name="kind" value="delivery"> Delivery</label>
+        <label><input type="radio" name="kind" value="hoist"> Materials hoist</label>
+        <label><input type="radio" name="kind" value="pump"> Concrete boom pump</label>
+        <label><input type="radio" name="kind" value="mobile"> Mobile crane</label>
+        <label data-admin hidden><input type="radio" name="kind" value="hold"> Site hold</label>
+        <label data-admin hidden><input type="radio" name="kind" value="closure"> Close (wind, breakdown)</label>
+      </div>
+    </fieldset>
+    <div class="row">
+      <label class="f">Date<input type="date" name="date" required></label>
+      <label class="f">Start<select name="start"></select></label>
+      <label class="f">Hours<select name="dur"></select></label>
+    </div>
+    <p class="avail" id="avail" aria-live="polite"></p>
+
+    <div class="row">
+      <label class="f">Level<select name="level"></select></label>
+      <label class="f">Pour zone<select name="zoneId"></select></label>
+    </div>
+    <p class="zonecard" id="zoneCard"></p>
+
+    <div class="sec row" data-sec="hold closure">
+      <label class="f">Applies to<select name="holdRes">
+        <option value="crane">Tower crane</option>
+        <option value="delivery">Deliveries</option>
+        <option value="hoist">Materials hoist</option>
+        <option value="pump">Concrete boom pump</option>
+        <option value="mobile">Mobile crane</option>
+        <option value="all">All</option>
+      </select></label>
+    </div>
+    <p class="sec hint" data-sec="closure">Closing cancels every booking in that time on what you pick, and emails each booker the reason.</p>
+
+    <p class="sec small muted" data-sec="crane delivery hoist pump mobile" id="bookingAs"></p>
+
+    <label class="f full"><span id="detailsLabel">Details</span><textarea name="details" rows="2" maxlength="400"></textarea></label>
+
+    <div class="sec row" data-sec="crane">
+      <label class="f">Heaviest piece (t)<input type="number" name="weight" min="0" step="0.1" inputmode="decimal"></label>
+      <label class="f">Lift radius (m)<input type="number" name="radius" min="0" max="60" step="1" inputmode="numeric" placeholder="5 to 55"></label>
+    </div>
+    <p class="sec avail" data-sec="crane" id="capMsg" aria-live="polite"></p>
+
+    <div class="sec row" data-sec="hoist">
+      <label class="f">Load (kg)<input type="number" name="load" min="0" step="10" inputmode="numeric"></label>
+    </div>
+
+    <div class="sec row" data-sec="pump">
+      <label class="f">Concrete volume (m³)<input type="number" name="volume" min="0" step="1" inputmode="numeric"></label>
+      <label class="f">Pump set-up<select name="pumpSetup">
+        <option>Driveway beside hoist</option>
+        <option>Other (agree with site team)</option>
+      </select></label>
+    </div>
+    <p class="sec hint" data-sec="pump">Meales Unit 334 boom pump. It reaches 45.2 m horizontally and 49.2 m vertically. The 8 × 5 m feed area takes two agitators.</p>
+
+    <div class="sec row" data-sec="mobile">
+      <label class="f">Crane size (t)<input type="number" name="mcSize" min="0" step="5" inputmode="numeric" placeholder="e.g. 55"></label>
+      <label class="f">Heaviest piece (t)<input type="number" name="mcWeight" min="0" step="0.1" inputmode="decimal"></label>
+      <label class="f">Set-up location<select name="mcSetup">
+        <option>Surbiton Court</option>
+        <option>Banchory Court</option>
+        <option>On site</option>
+        <option>Other</option>
+      </select></label>
+    </div>
+    <p class="sec hint" data-sec="mobile">Street set-ups may need a council permit and traffic control. Have them sorted before the booking day.</p>
+
+    <div class="sec row" data-sec="delivery">
+      <label class="f">Vehicle<select name="vehicle">
+        <option>Ute / van</option>
+        <option>Rigid truck</option>
+        <option>Semi-trailer</option>
+        <option>Crane truck</option>
+        <option>Concrete agitator</option>
+        <option>Concrete pump</option>
+        <option>Other</option>
+      </select></label>
+      <label class="check"><input type="checkbox" name="craneToo"> Also book the crane to unload</label>
+      <label class="check"><input type="checkbox" name="hoistToo"> Also book the hoist to take it up</label>
+    </div>
+
+    <p class="err" id="formErr" role="alert"></p>
+    <div class="actions">
+      <button type="button" class="ghost" id="formCancel">Close</button>
+      <button type="submit" class="primary" id="submitBtn">Book slot</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="detDlg" aria-labelledby="detTitle">
+  <div class="dlg">
+    <h2 id="detTitle"></h2>
+    <dl id="detList"></dl>
+    <p class="err" id="detErr" role="alert"></p>
+    <div class="actions">
+      <button type="button" class="danger" id="detCancelBk" hidden>Cancel booking</button>
+      <button type="button" class="primary" id="detClose">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
