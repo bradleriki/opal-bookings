@@ -1,27 +1,23 @@
 {
-  // Opal Carindale site bookings: one Cloudflare Worker serving the app (public/) and the API (src/worker.js).
+  // Opal Carindale site bookings: one Cloudflare Worker serving the app (public/, bundled at build) and the API (src/worker.js).
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "opal-bookings",
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "workers_dev": true,
-  "assets": {
-    "directory": "public",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
-  },
+  "preview_urls": false,
+  // The files in public/ are packed into the Worker by this build step (served by src/worker.js).
+  "build": { "command": "node scripts/bundle-static.mjs", "watch_dir": "public" },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "opal-bookings",
-      // Replaced with the real id after `wrangler d1 create opal-bookings` (see README).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "996e2537-888c-433f-9e77-c41570d0004e",
       "migrations_dir": "migrations"
     }
   ],
   "vars": {
-    "APP_URL": "",
+    "APP_URL": "https://opal-bookings.bradleriki.workers.dev",
     "MAIL_FROM": "Opal Carindale bookings <bookings@example.com>",
     "ADMIN_EMAILS": "",
     "DEV_MODE": "0"

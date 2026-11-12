@@ -5,6 +5,7 @@ import {
   validateBooking, brisbaneNow, slotOf, span, fmtD, isDate, addDays, STEP, hourLabel
 } from '../public/js/rules.js';
 import {sendEmail} from './email.js';
+import STATIC from './static-files.js';
 
 const CODE_TTL = 10 * 60e3, SESSION_TTL = 30 * 24 * 3600e3, SIGNUP_TTL = 30 * 60e3;
 const COOKIE = 'ob_sess';
@@ -407,6 +408,23 @@ async function adminExport(req, env, user){
   return new Response('﻿' + lines.join('\r\n'), {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="Opal_Carindale_Bookings_${from}_to_${to}.csv"`, 'Cache-Control': 'no-store'}});
 }
 
+/* ---------- app files ---------- */
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+};
+const b64bytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+function serveStatic(req, url){
+  if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', {status: 405});
+  let f = STATIC[url.pathname === '/' ? '/index.html' : url.pathname];
+  if (!f && !/\.[a-z0-9]+$/i.test(url.pathname)) f = STATIC['/index.html']; // app routes
+  if (!f) return new Response('Not found', {status: 404, headers: SECURITY_HEADERS});
+  const isHtml = f.type.startsWith('text/html');
+  const headers = {'Content-Type': f.type, 'ETag': f.etag, 'Cache-Control': isHtml || url.pathname === '/sw.js' ? 'no-cache' : 'public, max-age=300', ...SECURITY_HEADERS};
+  if (req.headers.get('If-None-Match') === f.etag) return new Response(null, {status: 304, headers});
+  return new Response(req.method === 'HEAD' ? null : b64bytes(f.b64), {headers});
+}
+
 /* ---------- router ---------- */
 async function route(req, env){
   const url = new URL(req.url), p = url.pathname, m = req.method;
@@ -440,7 +458,7 @@ async function route(req, env){
 export default {
   async fetch(req, env){
     const url = new URL(req.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
+    if (!url.pathname.startsWith('/api/')) return serveStatic(req, url);
     try {
       return await route(req, env);
     } catch (e){
