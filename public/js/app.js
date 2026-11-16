@@ -640,7 +640,35 @@ function adminSettings(box, err){
     h('p', {class: 'muted small'}, 'Downloads a CSV that opens in Excel, including cancelled bookings and who booked them.'),
     h('div', {class: 'formrow'}, h('label', {class: 'f'}, 'From', from), h('label', {class: 'f'}, 'To', to),
       h('button', {class: 'primary', type: 'button', onclick: () => { if (from.value && to.value) location.href = `/api/admin/export?from=${from.value}&to=${to.value}`; }}, 'Download CSV')));
-  box.append(f, exp);
+  const tv = h('div', {class: 'section'}, h('h3', null, 'TV display'), h('p', {class: 'muted small'}, 'Loading…'));
+  box.append(f, exp, tv);
+  renderTvSection(tv, err);
+}
+async function renderTvSection(sec, err){
+  let st;
+  try { st = await api('/api/admin/tv'); } catch (x){ sec.lastChild.textContent = x.message; return; }
+  const act = async (action, confirmMsg) => {
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    try { await api('/api/admin/tv', {method: 'POST', body: {action}}); toast(action === 'disable' ? 'TV display switched off' : 'New TV link ready'); }
+    catch (x){ err.textContent = x.message; return; }
+    sec.textContent = ''; sec.append(h('h3', null, 'TV display'), h('p', {class: 'muted small'}, 'Loading…')); renderTvSection(sec, err);
+  };
+  sec.textContent = '';
+  sec.append(h('h3', null, 'TV display'),
+    h('p', {class: 'muted small'}, 'A read-only live board for a screen in the site office: today and the next booking day, all five resources, updated every 20 seconds. No sign-in, no phone numbers, and nothing can be changed from it. Open the link on the TV\u2019s browser and make it full screen (F11 on a PC).'));
+  if (!st.enabled){
+    sec.append(h('div', {class: 'formrow'}, h('button', {class: 'primary', type: 'button', onclick: () => act('create')}, 'Create TV link')));
+    return;
+  }
+  const link = h('input', {type: 'text', readonly: true, value: st.url, style: 'flex:1;min-width:260px'});
+  sec.append(
+    h('p', {class: 'small'}, 'Anyone with this link can see the board, so only put it on the site screen. Making a new link switches the old one off.'),
+    h('div', {class: 'formrow'}, link,
+      h('button', {class: 'primary', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(st.url); toast('Link copied'); } catch { link.select(); } }}, 'Copy link'),
+      h('a', {class: 'ghost', href: st.url, target: '_blank', rel: 'noopener', style: 'text-decoration:none;display:inline-flex;align-items:center'}, 'Open')),
+    h('div', {class: 'formrow'},
+      h('button', {class: 'ghost', type: 'button', onclick: () => act('create', 'Make a new link? The TV will stop showing bookings until you open the new link on it.')}, 'Make a new link'),
+      h('button', {class: 'danger', type: 'button', onclick: () => act('disable', 'Switch the TV display off?')}, 'Switch off')));
 }
 
 /* ---------- routing ---------- */
@@ -668,7 +696,9 @@ function route(){
 window.addEventListener('hashchange', route);
 setInterval(() => { if (S.me && currentRoute() === 'board' && !formDlg.open && !detDlg.open) renderBoard(); }, 5 * 60 * 1000);
 
-(async () => {
+if (location.pathname.startsWith('/tv/') || location.pathname === '/tv') {
+  import('./tv.js').then(m => m.startTv());
+} else (async () => {
   try { await loadMe(); } catch { S.me = null; S.programme = S.programme || null; }
   if (!S.programme){ const m = await import('./rules.js'); S.programme = m.DEFAULT_PROGRAMME; S.settings = m.DEFAULT_SETTINGS; }
   route();

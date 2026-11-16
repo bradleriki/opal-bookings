@@ -227,3 +227,54 @@ dd a{color:inherit}
 }
 .hdr-actions a.ghost{display:inline-flex;align-items:center;color:#003C69}
 .cfg-grid input{max-width:170px}
+
+/* ---------- TV display (/tv/<key>) ---------- */
+body.tv{background:#FFFFFF;color:#111111;overflow:hidden;cursor:none;font-size:clamp(12px,0.95vw,22px)}
+body.tv header.band,body.tv .foot,body.tv dialog{display:none!important}
+body.tv main{max-width:none;padding:0}
+.tv-wrap{height:100vh;display:grid;grid-template-rows:auto 1fr auto;gap:.6em;padding:.8em 1.1em .6em;box-sizing:border-box}
+.tv-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.2em;padding-bottom:.5em;border-bottom:.3em solid #822433}
+.tv-logo{width:11em;height:auto;display:block}
+.tv-h{font-size:2em;font-weight:700;color:#003C69;line-height:1.1}
+.tv-sub{color:#555555;font-size:1em}
+.tv-right{text-align:right}
+.tv-clock{font-size:2.4em;font-weight:700;color:#003C69;line-height:1}
+.tv-status{color:#555555;font-size:.85em;margin-top:.2em}
+.tv-status.bad{color:#C00000;font-weight:700}
+.tv-days{display:grid;grid-template-columns:1fr 1fr;gap:1em;min-height:0}
+.tv-day{display:grid;grid-template-rows:auto 1fr;min-height:0;border:1px solid #8A99B5;border-radius:.4em;overflow:hidden}
+.tv-day.is-today{border:.2em solid #003C69}
+.tv-dayhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3em 1em;padding:.4em .7em;background:#003C69;color:#FFFFFF}
+.tv-day:not(.is-today) .tv-dayhead{background:#EEF1F5;color:#003C69}
+.tv-when{font-size:1.5em;font-weight:700}
+.tv-date{font-size:1.1em}
+.tv-pour{margin-left:auto;font-weight:700;padding:.1em .6em;border-radius:.2em;color:#111111;background:repeating-linear-gradient(135deg,#F2B705 0 .5em,#FFE7A0 .5em 1em)}
+.tv-grid{position:relative;display:grid;grid-template-columns:3.2em repeat(5,minmax(0,1fr));grid-template-rows:auto 1fr;min-height:0}
+.tv-corner{border-bottom:1px solid #8A99B5}
+.tv-colhead{display:flex;align-items:center;gap:.35em;padding:.3em .4em;font-weight:700;font-size:.9em;border-left:1px solid #8A99B5;border-bottom:1px solid #8A99B5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-colhead i,.tv-key i{display:inline-block;width:.8em;height:.8em;border-radius:.15em;flex:none}
+.tv-gutter,.tv-col{display:grid;grid-template-rows:repeat(var(--rows),minmax(0,1fr));min-height:0}
+.tv-gutter div{font-size:.75em;color:#555555;text-align:right;padding:0 .4em;border-top:1px solid #DCE2EC;line-height:1.2}
+.tv-col{border-left:1px solid #8A99B5;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(200% / var(--rows) - 1px),#DCE2EC calc(200% / var(--rows) - 1px),#DCE2EC calc(200% / var(--rows)))}
+.tv-bk{margin:.12em .18em;border-radius:.25em;padding:.15em .4em;overflow:hidden;display:flex;flex-direction:column;line-height:1.15;min-height:0}
+.tv-bk.crane{background:var(--crane);color:var(--crane-ink)}
+.tv-bk.deliv{background:var(--deliv);color:var(--deliv-ink)}
+.tv-bk.hoist{background:var(--hoist);color:var(--hoist-ink)}
+.tv-bk.pump{background:var(--pump);color:var(--pump-ink)}
+.tv-bk.mobile{background:var(--mobile);color:var(--mobile-ink)}
+.tv-bk.hold{background:repeating-linear-gradient(135deg,#D5DAD8 0 .6em,#C3C9C7 .6em 1.2em);color:#111111}
+.tv-bk.past{opacity:.45}
+.tv-bk.brk{background:#C00000;color:#FFFFFF;font-size:.7em;font-weight:700;justify-content:center;align-items:center;padding:0 .3em;white-space:nowrap}
+.tv-bk.off{background:#EEF1F5;color:#555555;border:1px dashed #8A99B5;font-weight:700;font-size:.85em;padding:.5em}
+.tv-t{font-size:.75em;font-weight:700;opacity:.9}
+.tv-bk.short .tv-d{-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis;display:block}
+.tv-c{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-d{font-size:.8em;overflow:hidden;opacity:.92;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+.tv-col{position:relative}
+.tv-now{position:absolute;left:0;right:0;height:.2em;margin-top:-.1em;background:#C00000;pointer-events:none;z-index:2}
+.tv-legend{display:flex;flex-wrap:wrap;gap:.3em 1.2em;align-items:center;font-size:.85em;color:#555555}
+.tv-key{display:inline-flex;align-items:center;gap:.35em}
+.tv-src{margin-left:auto}
+.tv-msg{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6em;text-align:center;padding:2em}
+.tv-msg h2{color:#003C69;font-size:2.2em;margin:.6em 0 0}
+.tv-msg p{font-size:1.3em;color:#555555;max-width:40em}

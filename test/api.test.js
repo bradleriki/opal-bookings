@@ -31,7 +31,9 @@ class Client {
 }
 
 const admin = new Client(), sub = new Client(), sub2 = new Client(), stranger = new Client();
-const date = '2027-03-03';
+// A different Wednesday each run (inside the crane window, no public holidays), so earlier runs' bookings don't clash.
+const WEDS = Array.from({length: 30}, (_, k) => new Date(Date.UTC(2027, 3, 7 + 7 * k)).toISOString().slice(0, 10)).filter(d => d !== '2027-08-11');
+const date = process.env.TEST_DATE || WEDS[Math.floor(Math.random() * WEDS.length)];
 let subCompanyId, adminUser;
 
 test('admin signs up and is active straight away', async () => {
@@ -155,4 +157,31 @@ test('deleting a person removes their details and signs them out', async () => {
 test('cross-site posts are refused', async () => {
   const res = await fetch(BASE + '/api/bookings', {method: 'POST', headers: {'Content-Type': 'application/json', Origin: 'https://evil.example', Cookie: admin.cookie}, body: '{}'});
   assert.equal(res.status, 403);
+});
+
+test('TV display: off until created, read-only, no phone numbers, switchable', async () => {
+  const anon = new Client();
+  assert.equal((await anon.call('/api/tv?key=nothing')).status, 403);
+  assert.equal((await sub.call('/api/admin/tv')).status, 403);
+  const made = await admin.call('/api/admin/tv', {method: 'POST', body: {action: 'create'}});
+  assert.equal(made.status, 200);
+  assert.ok(made.data.enabled && /\/tv\/[\w-]{20,}$/.test(made.data.url));
+  const key = made.data.url.split('/tv/')[1];
+  const tv = await anon.call('/api/tv?key=' + encodeURIComponent(key));
+  assert.equal(tv.status, 200, JSON.stringify(tv.data));
+  assert.equal(tv.data.days.length, 2);
+  assert.notEqual(tv.data.days[0], tv.data.days[1]);
+  const text = JSON.stringify(tv.data);
+  assert.ok(!/0411 111 111|0400 000 000|@test\.local|"phone"|"contact"|"userId"/.test(text), 'TV data must not include contact details');
+  assert.equal((await anon.call('/api/tv?key=' + encodeURIComponent(key) + 'x')).status, 403);
+  // A new link switches the old one off; switching off stops both.
+  const again = await admin.call('/api/admin/tv', {method: 'POST', body: {action: 'create'}});
+  assert.equal((await anon.call('/api/tv?key=' + encodeURIComponent(key))).status, 403);
+  const key2 = again.data.url.split('/tv/')[1];
+  assert.equal((await anon.call('/api/tv?key=' + encodeURIComponent(key2))).status, 200);
+  await admin.call('/api/admin/tv', {method: 'POST', body: {action: 'disable'}});
+  assert.equal((await anon.call('/api/tv?key=' + encodeURIComponent(key2))).status, 403);
+  // The page itself loads at /tv/<key> without signing in.
+  const page = await fetch(BASE + '/tv/' + key2);
+  assert.equal(page.status, 200);
 });

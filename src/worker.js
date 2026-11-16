@@ -2,7 +2,7 @@
 // requests to /api/* come here first.
 import {
   RES, KIND, DEFAULT_PROGRAMME, DEFAULT_SETTINGS, LEVELS, POUR_LEVELS, zoneOf, zoneLong, zoneShort,
-  validateBooking, brisbaneNow, slotOf, span, fmtD, isDate, addDays, STEP, hourLabel
+  validateBooking, brisbaneNow, slotOf, span, fmtD, isDate, addDays, STEP, hourLabel, weekday, DAY_END
 } from '../public/js/rules.js';
 import {sendEmail} from './email.js';
 import STATIC from './static-files.js';
@@ -408,6 +408,58 @@ async function adminExport(req, env, user){
   return new Response('﻿' + lines.join('\r\n'), {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="Opal_Carindale_Bookings_${from}_to_${to}.csv"`, 'Cache-Control': 'no-store'}});
 }
 
+/* ---------- TV display (read-only, no login, private link) ---------- */
+async function tvToken(env){
+  const r = await env.DB.prepare("SELECT value FROM settings WHERE key = 'tv'").first();
+  try { return r ? JSON.parse(r.value).token || null : null; } catch { return null; }
+}
+async function sameSecret(a, b){
+  // Compare hashes so the check takes the same time whatever the input.
+  const [x, y] = await Promise.all([sha256('tv:' + a), sha256('tv:' + b)]);
+  let d = 0; for (let i = 0; i < x.length; i++) d |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return d === 0;
+}
+/* The two days the screen shows: today (or the next booking day once the site day is over), then the next booking day. */
+function tvDays(now){
+  let d1 = now.hour >= DAY_END ? addDays(now.date, 1) : now.date;
+  if (weekday(d1) === 0) d1 = addDays(d1, 1);
+  let d2 = addDays(d1, 1);
+  if (weekday(d2) === 0) d2 = addDays(d2, 1);
+  return [d1, d2];
+}
+async function tvData(req, env){
+  const key = new URL(req.url).searchParams.get('key') || '';
+  const token = await tvToken(env);
+  if (!token || !key || !(await sameSecret(key, token))) throw new HttpError(403, 'This display link has been switched off. Ask the site team for the new one.');
+  const now = brisbaneNow(), days = tvDays(now);
+  const [programme, settings, rows] = await Promise.all([getProgramme(env), getSettings(env),
+    env.DB.prepare(BOOKING_SELECT + " WHERE b.status = 'active' AND b.date IN (?, ?) ORDER BY b.date, b.start").bind(days[0], days[1]).all()]);
+  // No names, phones or ids on the wall screen: company and what is booked only.
+  const bookings = rows.results.map(rowToBooking).map(b => ({
+    kind: b.kind, date: b.date, start: b.start, end: b.end, resources: b.resources, level: b.level, zoneId: b.zoneId,
+    details: b.details, company: b.company, weight: b.weight ?? null, radius: b.radius ?? null, vehicle: b.vehicle || ''
+  }));
+  return json({now, days, programme, cutoff: settings.cutoff, bookings}, 200, {'X-Robots-Tag': 'noindex'});
+}
+async function adminTv(req, env, user){
+  requireAdmin(user);
+  const origin = new URL(req.url).origin;
+  if (req.method === 'POST'){
+    const {action} = await body(req);
+    if (action === 'create'){
+      const token = randomToken();
+      await env.DB.prepare("INSERT INTO settings (key, value, updated_at, updated_by) VALUES ('tv', ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+        .bind(JSON.stringify({token}), nowIso(), user.id).run();
+      await audit(env, user.id, 'tv.create', {});
+    } else if (action === 'disable'){
+      await env.DB.prepare("DELETE FROM settings WHERE key = 'tv'").run();
+      await audit(env, user.id, 'tv.disable', {});
+    } else throw new HttpError(400, 'Bad action.');
+  }
+  const token = await tvToken(env);
+  return json({enabled: !!token, url: token ? origin + '/tv/' + token : null});
+}
+
 /* ---------- app files ---------- */
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY',
@@ -437,6 +489,7 @@ async function route(req, env){
   if (p === '/api/auth/verify' && m === 'POST') return authVerify(req, env);
   if (p === '/api/auth/signup' && m === 'POST') return authSignup(req, env);
   if (p === '/api/auth/logout' && m === 'POST') return logout(req, env);
+  if (p === '/api/tv' && m === 'GET') return tvData(req, env);
   const user = await currentUser(req, env);
   if (p === '/api/me' && m === 'GET'){
     const [programme, settings] = await Promise.all([getProgramme(env), getSettings(env)]);
@@ -452,6 +505,7 @@ async function route(req, env){
   if ((mm = p.match(/^\/api\/admin\/users\/([\w-]+)$/)) && m === 'POST') return adminUserUpdate(req, env, user, mm[1]);
   if (p === '/api/admin/settings' && m === 'POST') return adminSettings(req, env, user);
   if (p === '/api/admin/export' && m === 'GET') return adminExport(req, env, user);
+  if (p === '/api/admin/tv' && (m === 'GET' || m === 'POST')) return adminTv(req, env, user);
   throw new HttpError(404, 'Not found.');
 }
 
