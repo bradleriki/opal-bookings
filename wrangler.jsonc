@@ -19,10 +19,9 @@
   "vars": {
     "APP_URL": "https://opal-bookings.bradleriki.workers.dev",
     "MAIL_FROM": "Opal Carindale bookings <bookings@example.com>",
-    "ADMIN_EMAILS": "",
     "DEV_MODE": "0"
   },
-  // Secrets (set with `wrangler secret put`): RESEND_API_KEY
+  // Secrets (set with `wrangler secret put`, never committed): RESEND_API_KEY, ADMIN_EMAILS (comma-separated site team emails)
   "triggers": { "crons": ["17 16 * * *"] },
   "observability": { "enabled": true }
 }

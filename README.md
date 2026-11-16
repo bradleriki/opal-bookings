@@ -32,7 +32,7 @@ Tests: `npm test` (site rules) and, with `wrangler dev` running, `npm run test:a
 
 1. `npx wrangler login` (or set `CLOUDFLARE_API_TOKEN`).
 2. `npx wrangler d1 create opal-bookings` and paste the `database_id` into `wrangler.jsonc`.
-3. In `wrangler.jsonc` `vars`: set `ADMIN_EMAILS` (comma-separated site team emails), `MAIL_FROM`
+3. Set the site team: `npx wrangler secret put ADMIN_EMAILS` (comma-separated emails). In `wrangler.jsonc` `vars`: set `MAIL_FROM`
    (e.g. `Opal Carindale bookings <bookings@yourdomain.com.au>`) and, after the first deploy, `APP_URL`.
 4. `npx wrangler secret put RESEND_API_KEY`
 5. `npm run deploy` — applies the database schema and deploys. The app is then at
@@ -51,6 +51,6 @@ Tests: `npm test` (site rules) and, with `wrangler dev` running, `npm run test:a
 
 ## Site team
 
-The first admins are the emails in `ADMIN_EMAILS`. In the app, **Site team** lets you approve companies,
+The first admins are the emails in the `ADMIN_EMAILS` Worker secret. In the app, **Site team** lets you approve companies,
 make other people site team, switch people off or delete their details, change pour/crane/hoist dates and
 the booking cut-off, and export bookings to CSV.
