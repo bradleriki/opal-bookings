@@ -3,6 +3,7 @@ import {
   levelOf, zoneOf, zoneShort, zoneLong, craneCheck, capAt, blocksFor, blockMsg, resourcesFor, poursOn, pourLabel,
   hourLabel, span, fmtD, addDays, weekday, brisbaneNow, cutoffPassed, pad, SHUTDOWNS, HOLIDAYS
 } from './rules.js';
+import {icon} from './icons.js';
 
 const $ = s => document.querySelector(s);
 const RES_CLS = {crane: 'crane', delivery: 'deliv', hoist: 'hoist', pump: 'pump', mobile: 'mobile'};
@@ -88,7 +89,7 @@ function renderSignIn(step = 'email', email = ''){
         renderSignIn('code', input.value.trim());
       } catch (x){ err.textContent = x.message; btn.disabled = false; btn.textContent = 'Email me a code'; }
     });
-    card.append(form); view.append(card); input.focus();
+    card.append(form); view.append(signinShell(card)); input.focus();
   } else if (step === 'code'){
     const input = h('input', {type: 'text', name: 'code', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6', pattern: '[0-9]{6}', required: true});
     const btn = h('button', {class: 'primary', type: 'submit'}, 'Sign in');
@@ -104,7 +105,7 @@ function renderSignIn(step = 'email', email = ''){
         else { await loadMe(); route(); }
       } catch (x){ err.textContent = x.message; btn.disabled = false; }
     });
-    card.append(form); view.append(card); input.focus();
+    card.append(form); view.append(signinShell(card)); input.focus();
   } else {
     const companies = S.signup.companies || [];
     const name = h('input', {type: 'text', name: 'name', autocomplete: 'name', maxlength: '80'});
@@ -131,10 +132,21 @@ function renderSignIn(step = 'email', email = ''){
       try { await api('/api/auth/signup', {method: 'POST', body}); S.signup = null; await loadMe(); route(); }
       catch (x){ err.textContent = x.message; btn.disabled = false; }
     });
-    card.append(form); view.append(card); name.focus();
+    card.append(form); view.append(signinShell(card)); name.focus();
   }
 }
 
+/* Sign-in layout: a navy welcome panel beside the form card. */
+function signinShell(card){
+  const res = h('ul', {class: 'welcome-res'}, RES_IDS.map(r => h('li', {style: `--rc:var(--${RES_CLS[r]})`}, icon(r), RES[r].label)));
+  return h('div', {class: 'signin'},
+    h('aside', {class: 'welcome'},
+      h('p', {class: 'welcome-kicker'}, 'Opal Carindale RACF'),
+      h('h2', null, 'Book the hook, the gate and the pump in one place.'),
+      h('p', null, 'See what\u2019s on site today, book your crane lifts and deliveries, and get a confirmation by email.'),
+      res),
+    card);
+}
 function renderPending(){
   view.textContent = '';
   view.append(h('section', {class: 'card'}, h('h2', null, 'Waiting for approval'),
@@ -179,25 +191,30 @@ function columns(){
 function renderBoard(){
   view.textContent = '';
   const m = monday(S.anchor);
-  const controls = h('div', {class: 'controls'},
-    h('div', {class: 'nav'},
-      h('button', {type: 'button', 'aria-label': 'Previous', onclick: () => step(-1)}, '‹'),
-      h('button', {type: 'button', onclick: () => { S.anchor = notSunday(today()); loadWeek(); renderBoard(); }}, 'Today'),
-      h('button', {type: 'button', 'aria-label': 'Next', onclick: () => step(1)}, '›'),
-      h('h2', {id: 'rangeLabel'}, S.view === 'day' ? fmtLong(S.anchor) : fmtD(m).replace(/ \d+$/, '') + ' – ' + fmtD(addDays(m, 5)))),
-    h('div', {class: 'seg', role: 'group', 'aria-label': 'View'},
-      ['day', 'week'].map(v => h('button', {type: 'button', 'aria-pressed': String(S.view === v), onclick: () => { S.view = v; renderBoard(); }}, v === 'day' ? 'Day' : 'Week'))),
-    h('div', {class: 'seg', role: 'group', 'aria-label': 'Show bookings for', hidden: S.view !== 'week'},
-      RES_IDS.map(r => h('button', {type: 'button', 'aria-pressed': String(S.weekRes === r), onclick: () => { S.weekRes = r; renderBoard(); }}, RES[r].label))),
+  const hero = h('section', {class: 'hero'},
+    h('div', {class: 'hero-top'},
+      h('div', {class: 'nav'},
+        h('button', {type: 'button', class: 'navbtn', 'aria-label': 'Previous', onclick: () => step(-1)}, '‹'),
+        h('button', {type: 'button', class: 'navbtn today-btn', onclick: () => { S.anchor = notSunday(today()); loadWeek(); renderBoard(); }}, 'Today'),
+        h('button', {type: 'button', class: 'navbtn', 'aria-label': 'Next', onclick: () => step(1)}, '›'),
+        h('h2', {id: 'rangeLabel'}, S.view === 'day' ? fmtLong(S.anchor) : fmtD(m).replace(/ \d+$/, '') + ' – ' + fmtD(addDays(m, 5)))),
+      h('div', {class: 'seg seg-hero', role: 'group', 'aria-label': 'View'},
+        ['day', 'week'].map(v => h('button', {type: 'button', 'aria-pressed': String(S.view === v), onclick: () => { S.view = v; renderBoard(); }}, v === 'day' ? 'Day' : 'Week')))),
+    summaryChips());
+  const toolbar = h('div', {class: 'toolbar'},
+    S.view === 'week'
+      ? h('div', {class: 'restabs', role: 'group', 'aria-label': 'Show bookings for'},
+          RES_IDS.map(r => h('button', {type: 'button', class: 'restab', style: `--rc:var(--${RES_CLS[r]})`, 'aria-pressed': String(S.weekRes === r), onclick: () => { S.weekRes = r; renderBoard(); }}, icon(r), RES[r].label)))
+      : h('div', {class: 'restabs-note muted small'}, 'All five resources for the day, side by side.'),
     zoneFilterEl());
-  view.append(controls);
+  view.append(hero, toolbar);
 
   const cols = columns();
   const board = h('div', {class: 'board', 'data-view': S.view, style: `--cols:${cols.length};--rows:${CELLS.length}`});
   board.append(el('div', 'corner'));
   for (const c of cols){
     const hd = el('div', 'colhead' + (c.today ? ' today' : ''));
-    if (S.view === 'day'){ const k = el('span', 'key'); k.style.background = 'var(--' + RES_CLS[c.res] + ')'; hd.append(k); }
+    if (S.view === 'day'){ const k = icon(c.res, 'key ic'); k.style.color = 'var(--' + RES_CLS[c.res] + ')'; hd.append(k); }
     hd.append(c.head);
     const pl = pourLabel(c.date, S.programme);
     if (pl && (S.view === 'week' || c.res === 'crane')){ const f = el('span', 'pour'); f.append(el('span', null, 'Pour: ' + pl)); hd.append(f); }
@@ -261,6 +278,21 @@ function renderBoard(){
   view.append(lowerPanels());
 }
 const rowOf = t => Math.round((t - DAY_START) / STEP) + 1;
+/* At-a-glance chips in the navy banner: today's bookings, next pour, crane status. */
+function summaryChips(){
+  const t = today();
+  const todays = S.upcoming.filter(b => b.date === t && b.kind !== 'closure');
+  const mine = todays.filter(isMine).length;
+  const pours = Object.entries(S.programme.pours || {}).filter(([, d]) => d >= t).sort((a, b) => a[1].localeCompare(b[1]));
+  const next = pours[0];
+  const crane = blocksFor('crane', t, S.programme).find(b => b.full);
+  const chip = (ic, label, value, cls = '') => h('div', {class: 'chip ' + cls}, icon(ic), h('span', {class: 'chip-l'}, label), h('b', null, value));
+  return h('div', {class: 'chips'},
+    chip('calendar', 'Today', todays.length ? todays.length + ' booking' + (todays.length === 1 ? '' : 's') + (mine ? ` · ${mine} yours` : '') : 'Nothing booked'),
+    chip('pour', 'Next pour', next ? zoneShort(...next[0].split(':')) + ' · ' + fmtShort(next[1]) : 'None programmed', 'pourchip'),
+    chip('crane', 'Tower crane', crane ? (t < S.programme.craneFrom ? 'From ' + fmtD(S.programme.craneFrom) : 'Not available today') : 'Available today'),
+    chip('clock', 'Cut-off', hourLabel(S.settings.cutoff) + ' day before'));
+}
 function step(dir){
   if (S.view === 'day'){ let d = addDays(S.anchor, dir); if (weekday(d) === 0) d = addDays(d, dir); S.anchor = d; }
   else S.anchor = addDays(S.anchor, 7 * dir);
@@ -294,11 +326,11 @@ function lowerPanels(){
   }
   const P = S.programme;
   return h('div', {class: 'lower'},
-    h('section', {class: 'panel'}, h('h2', null, h('span', null, S.list === 'mine' ? 'Your company’s upcoming bookings' : 'All bookings, next 14 days'),
+    h('section', {class: 'panel'}, h('h2', null, h('span', {class: 'ptitle'}, icon('calendar'), S.list === 'mine' ? 'Your company’s upcoming bookings' : 'All bookings, next 14 days'),
       h('span', {class: 'seg', role: 'group', 'aria-label': 'List'},
         h('button', {type: 'button', 'aria-pressed': String(S.list === 'mine'), onclick: () => { S.list = 'mine'; renderBoard(); }}, 'Yours'),
         h('button', {type: 'button', 'aria-pressed': String(S.list === 'all'), onclick: () => { S.list = 'all'; renderBoard(); }}, 'Everyone, next 14 days'))), list),
-    h('section', {class: 'panel rules'}, h('h2', null, 'Site rules for bookings'),
+    h('section', {class: 'panel rules'}, h('h2', null, h('span', {class: 'ptitle'}, icon('plan'), 'Site rules for bookings')),
       h('p', null, 'The tower crane, loading zone, materials hoist, concrete boom pump and mobile crane are booked separately. If your delivery needs the crane to unload or the hoist to take it up, tick the boxes on the booking form and they are booked together.'),
       h('p', null, `Bookings close at ${hourLabel(S.settings.cutoff)} the day before. For anything sooner, call the site team.`),
       h('p', null, 'Every booking is tied to a level and pour zone from the slab pour sequence. Use the zone filter to see one zone’s bookings.'),
@@ -694,6 +726,8 @@ function route(){
   renderBoard(); loadWeek(true); startPolling();
 }
 window.addEventListener('hashchange', route);
+form.querySelectorAll('input[name=kind]').forEach(i => { if (RES_CLS[i.value]){ i.parentElement.style.setProperty('--rc', 'var(--' + RES_CLS[i.value] + ')'); i.after(icon(i.value)); } });
+$('#planLink').prepend(icon('plan')); $('#adminLink').prepend(icon('team')); $('#bookBtn').prepend(icon('plus'));
 setInterval(() => { if (S.me && currentRoute() === 'board' && !formDlg.open && !detDlg.open) renderBoard(); }, 5 * 60 * 1000);
 
 if (location.pathname.startsWith('/tv/') || location.pathname === '/tv') {
