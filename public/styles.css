@@ -379,3 +379,24 @@ html{background:var(--bg)}
 .kinds label:has(input:checked) .ic{color:var(--rc,var(--navy))}
 @media (max-width:760px){.hdr-actions{justify-content:flex-start}}
 @media (max-width:600px){.chip b{white-space:normal;overflow:visible;line-height:1.25}.chip{align-items:start}.hero-top{margin-bottom:10px}}
+/* Booking blocks: zone + "Yours" on one row; time never wraps (phone fix) */
+.bk-top{display:flex;align-items:center;gap:4px;min-width:0;margin-bottom:1px}
+.bk-top .z{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
+.bk-top .tag{position:static;flex:none;margin-left:auto;font-size:10px;line-height:1.5}
+.bk .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.colhead{white-space:normal;overflow-wrap:anywhere;line-height:1.2}
+@media (max-width:600px){.bk{padding:4px 6px;margin:2px 3px}.bk .t{font-size:11px}.bk-top .z{font-size:10px}.board[data-view="day"]{--colmin:104px}}
+.bk-top .c{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
+.tag-short{display:none}
+.bk.short{padding-top:3px;padding-bottom:3px;gap:0}
+.bk.off{overflow-wrap:anywhere}
+@media (max-width:600px){
+  .tag-long{display:none}.tag-short{display:inline}
+  .bk-top .tag{padding:0 5px;font-size:11px}
+  .bk.off{font-size:12px;padding:8px}
+}
+/* Longer bookings have room: wrap text instead of cutting it off */
+.bk:not(.short) .t,.bk:not(.short) .c,.bk:not(.short) .d,.bk:not(.short) .bk-top .z{white-space:normal;overflow-wrap:break-word}
+.bk:not(.short) .bk-top{align-items:flex-start}
+.bk.off{overflow-wrap:break-word;hyphens:auto}
+@media (max-width:600px){.board[data-view="day"]{--colmin:116px}}

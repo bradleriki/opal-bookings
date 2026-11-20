@@ -183,7 +183,9 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && S.
 
 function columns(){
   const t = today();
-  if (S.view === 'day') return RES_IDS.map(r => ({res: r, date: S.anchor, head: RES[r].label, today: false}));
+  // Short names in Day view so the five columns fit a phone.
+  const SHORT = {crane: 'Tower crane', delivery: 'Deliveries', hoist: 'Hoist', pump: 'Boom pump', mobile: 'Mobile crane'};
+  if (S.view === 'day') return RES_IDS.map(r => ({res: r, date: S.anchor, head: SHORT[r], today: false}));
   const m = monday(S.anchor);
   return [0, 1, 2, 3, 4, 5].map(i => { const d = addDays(m, i); return {res: S.weekRes, date: d, head: fmtShort(d), today: d === t}; });
 }
@@ -248,15 +250,22 @@ function renderBoard(){
       const btn = el('button', 'bk ' + cls + (isMine(b) ? ' mine' : '') + (endPassed(c.date, b.end) ? ' past' : '') + (matchesFilter(b) ? '' : ' dim'));
       btn.type = 'button';
       btn.style.gridRow = rowOf(b.start) + ' / ' + rowOf(b.end);
-      if (b.level && b.zoneId) btn.append(el('span', 'z', zoneShort(b.level, b.zoneId)));
+      // Top row holds the zone (or, on 1-hour bookings, the company) and the "Yours" badge, so nothing overlaps.
+      const who = b.kind === 'hold' ? 'Site hold' : b.kind === 'closure' ? 'Closed' : (b.company || 'Booked');
+      const short = b.end - b.start <= 1;
+      if (short) btn.classList.add('short');
+      const top = el('span', 'bk-top');
+      if (short) top.append(el('span', 'c', who));
+      else if (b.level && b.zoneId) top.append(el('span', 'z', zoneShort(b.level, b.zoneId)));
+      if (isMine(b)){ const tg = el('span', 'tag'); tg.append(el('span', 'tag-long', 'Yours'), el('span', 'tag-short', '✓')); tg.title = 'Your company'; top.append(tg); }
+      if (top.childNodes.length) btn.append(top);
       btn.append(el('span', 't', span(b.start, b.end)));
-      btn.append(el('span', 'c', b.kind === 'hold' ? 'Site hold' : b.kind === 'closure' ? 'Closed' : (b.company || 'Booked')));
+      if (!short) btn.append(el('span', 'c', who));
       let d = b.details || '';
       if (b.kind === 'delivery' && c.res === 'crane') d = 'Unloading delivery' + (d ? ': ' + d : '');
       else if (b.kind === 'delivery' && c.res === 'hoist') d = 'Delivery going up' + (d ? ': ' + d : '');
       else if (b.kind === 'delivery'){ const extra = b.resources.filter(r => r !== 'delivery').map(r => RES[r].short); if (extra.length) d = 'With ' + extra.join(' + ') + (d ? ': ' + d : ''); }
-      if (d) btn.append(el('span', 'd', d));
-      if (isMine(b)) btn.append(el('span', 'tag', 'Yours'));
+      if (d && !short) btn.append(el('span', 'd', d));
       btn.setAttribute('aria-label', (b.company || KIND[b.kind]) + ', ' + RES[c.res].label + ', ' + span(b.start, b.end) + ', ' + c.date);
       btn.addEventListener('click', () => openDetail(b));
       col.append(btn);
