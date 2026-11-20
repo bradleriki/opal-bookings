@@ -400,3 +400,5 @@ html{background:var(--bg)}
 .bk:not(.short) .bk-top{align-items:flex-start}
 .bk.off{overflow-wrap:break-word;hyphens:auto}
 @media (max-width:600px){.board[data-view="day"]{--colmin:116px}}
+/* Day view headings: icon always above the name, names aligned along the bottom */
+.board[data-view="day"] .colhead{flex-direction:column;flex-wrap:nowrap;align-items:flex-start;justify-content:flex-end;gap:4px}
